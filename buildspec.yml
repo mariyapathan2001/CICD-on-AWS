@@ -2,24 +2,33 @@ version: 0.2
 
 env:
   parameter-store:
-    DOCKER_REGISTRY_USERNAME: /myapp/docker-credentials/username
-    DOCKER_REGISTRY_PASSWORD: /myapp/docker-credentials/password
-    DOCKER_REGISTRY_URL: /myapp/docker-registry/url
+   ec2_username: ec2_username
+    ec2_public_ip: ec2_public_ip
+    ec2_pem_key: ec2_key_pem
 phases:
   install:
     runtime-versions:
-      python: 3.11
+      docker: 28
+    commands :
+         - echo "installing dependencies"
+         - yum install -y openssh
   pre_build:
     commands:
-      - echo "Installing dependencies..."
+      - echo " logging in to ec2 "
       - pip install -r requirements.txt
   build:
     commands:
-      - echo "Running tests..."
-      - echo "Building Docker image..."
-      - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin "$DOCKER_REGISTRY_URL"
-      - docker build -t "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/simple-python-flask-app:latest" .
-      - docker push "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/simple-python-flask-app:latest"
+      - echo "Deploying to Ec2"
+      - ec2_key_pem > key.pem
+      - chmod 400 key.pem
+      - |
+         ssh -i key.pem -o StrictHostKeyChecking=no  ec2-username@ec2_public_ip << EOF
+           cd /home/ec2-user/flask-app
+           docker stop flaskapp || true 
+           docker build -t flaskapp 
+            docker run -d -p 50000:5000 --name flaskapp flaskapp
+      
+      
   post_build:
     commands:
       - echo "Build completed successfully!"
