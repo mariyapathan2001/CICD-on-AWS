@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   parameter-store:
-   ec2_username: ec2_username
+    ec2_username: ec2_username
     ec2_public_ip: ec2_public_ip
     ec2_pem_key: ec2_key_pem
 phases:
